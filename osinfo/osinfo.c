@@ -81,28 +81,40 @@ static char * get_value(char *fullkey)
     return val;
 }
     
-//get OS name, version etc.
-int osi_get_os_info(char **osinfo)
+/*get OS name, version etc.
+  Returns array of char*, treated as key-value pair 
+  osinfo[0]= key
+  osinfo[1]= value
+*/
+
+int osi_get_os_info(char ***osinfo)
 {
-    char **info=NULL;
+    char **info=NULL, **ret=NULL;
     char *key = NULL, *value = NULL;
     int i=0;
     info = (char **)rll_get_value_strings(rghandle, win_keys[0].key, win_keys[0].recursive);
     
+    //allocate buffer to return;
+    //TODO: max key-value pair 128
+    ret = (char **) calloc(256, sizeof(char *)); 
+   
     while(info && info[i])
     {
         key = get_base_key(info[i]);
         value = get_value(info[i]);
-        fprintf(stderr, "\t\t%s : %s \n", key, value);
+        ret[i*2]=key;
+        ret[i*2+1]=value;
+        //fprintf(stderr, "\t\t%s : %s \n", key, value);
         i++;
     }
 
+    *osinfo = ret;
     return 0;
 }
    
 
 /* get os information */
-int osi_get_os_details(char *regfile, char **osinfo)
+int osi_get_os_details(char *regfile, char ***osinfo)
 {
     int status =0;
     int i=0;
@@ -124,7 +136,8 @@ int osi_get_os_details(char *regfile, char **osinfo)
     }
 
     //get the os info
-    osi_get_os_info(info);
+    osi_get_os_info(&info);
+    *osinfo = info;
 
     /*
     for(i=0; i<OS_INFO_END; i++)

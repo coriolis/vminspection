@@ -75,4 +75,4 @@ typedef struct reg_key_lookup_t {
 /* From given regfile find OS information
    Returns information in a buffer
  */
-int osi_get_os_details(char *regfile, char **info);
+int osi_get_os_details(char *regfile, char ***info);
