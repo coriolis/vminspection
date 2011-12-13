@@ -8,7 +8,10 @@
 #include <string.h>
 #include <time.h>
 #include "include/win_specific.h"
+#if 0
 #include "iconv.h"
+iconv_t conv_desc;
+#endif
 #include "include/regfi.h"
 #include "include/void_stack.h"
 
@@ -29,7 +32,6 @@ const char* common_special_chars = ",\"\\";
 
 #define NUM_DEFAULT_VALUES 256
 //TODO: Fix these properly
-iconv_t conv_desc;
 
 #define EX_OSERR -1
 #define EX_DATAERR -2
@@ -121,7 +123,7 @@ static char* quote_string(const char* str, const char* special)
   return quote_buffer((const unsigned char*)str, len, special);
 }
 
-
+#if 0
 /*
  * Convert from UTF-16LE to ASCII.  Accepts a Unicode buffer, uni, and
  * it's length, uni_max.  Writes ASCII to the buffer ascii, whose size
@@ -129,7 +131,7 @@ static char* quote_string(const char* str, const char* special)
  * terminates the string.  Returns the length of the string stored in
  * ascii.  On error, returns a negative errno code.
  */
-static int uni_to_ascii(unsigned char* uni, char* ascii, 
+static int uni_to_ascii_orig(unsigned char* uni, char* ascii, 
 			unsigned int uni_max, unsigned int ascii_max)
 {
   char* inbuf = (char*)uni;
@@ -152,7 +154,23 @@ static int uni_to_ascii(unsigned char* uni, char* ascii,
   iconv_close(conv_desc);  
   return strlen(ascii);
 }
+#endif
+/* minimal utf-16 to ascii converter */
+static int uni_to_ascii(unsigned char* uni, char* ascii, 
+			unsigned int uni_max, unsigned int ascii_max)
+{
+  char* inbuf = (char*)uni;
+  char* outbuf = ascii;
+  int i=0, j=0;
 
+    for(i=0;i<ascii_max && i<uni_max/2;i++)
+        ascii[i]=uni[i*2];
+    ascii[ascii_max-1]= '\0';
+    
+    return strlen(ascii);
+
+}
+        
 
 /*
  * Convert a data value to a string for display.  Returns NULL on error,
