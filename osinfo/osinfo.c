@@ -5,11 +5,12 @@
 
 #include <stdio.h>
 #include <string.h>
+/*
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+*/
 
 #include "osinfo.h"
 #include "reglookuplib.h"
@@ -114,24 +115,24 @@ int osi_get_os_info(char ***osinfo)
    
 
 /* get os information */
-int osi_get_os_details(char *regfile, char ***osinfo)
+int osi_get_os_details(void *open, void *read, void *lseek, char ***osinfo)
 {
     int status =0;
     int i=0;
     char **info = NULL;
     
 
-    if(!regfile || !osinfo) 
+    if(!osinfo) 
     {
         fprintf(stderr, "Invalid parameters\n");
         return 0;
     }
 
-    rghandle = (void *)rll_open_file_clbks(regfile, open, read, lseek);
+    rghandle = (void *)rll_open_file_clbks(open, read, lseek);
 
     if(!rghandle)
     {
-        fprintf(stderr, "Failed to open registry file %s\n", regfile);
+        fprintf(stderr, "Failed to open registry file \n");
         return 0;
     }
 

@@ -909,11 +909,11 @@ DLL_EXPORT void *rll_open_file(char *regfile)
     return (void *)f;
 }
 
-DLL_EXPORT void *rll_open_file_clbks(char *regfile, void *op, void *rd, void *lsk)
+DLL_EXPORT void *rll_open_file_clbks(void *op, void *rd, void *lsk)
 {
     REGF_FILE* f;
     
-    f = regfi_open_clbks(regfile, op, rd, lsk);
+    f = regfi_open_clbks("DUMMY", op, rd, lsk);
     if(f == NULL)
     {
         fprintf(stderr, "ERROR: Couldn't open registry file: %s\n", regfile);
