@@ -916,7 +916,7 @@ DLL_EXPORT void *rll_open_file_clbks(void *op, void *rd, void *lsk)
     f = regfi_open_clbks("DUMMY", op, rd, lsk);
     if(f == NULL)
     {
-        fprintf(stderr, "ERROR: Couldn't open registry file: %s\n", regfile);
+        fprintf(stderr, "ERROR: Couldn't open registry file\n");
         bailOut(EX_NOINPUT, "");
     }
 
