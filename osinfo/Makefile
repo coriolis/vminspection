@@ -5,8 +5,8 @@
 FILES=libosinfo.so win_test
 
 CFLAGS=-Wall -fPIC 
-INC=-I../reglookuplib/include -I../osinfo
-LIB=-L/usr/local/lib -lhivex  
+INC=-I../../hivex/lib/ -I../osinfo
+LIB=-L../../hivex/lib/.libs -lhivex  
 
 TEST_LIB=-L../osinfo -losinfo
 

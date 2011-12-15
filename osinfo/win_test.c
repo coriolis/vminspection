@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include<stdio.h>
+#include<stdlib.h>
 #include "osinfo.h"
 
 void usage(char *argv[])
@@ -15,6 +16,7 @@ void usage(char *argv[])
 
 static char *regfilename = NULL;
 static int dumpfd =0;
+static int readcount = 0;
 
 int myopen(char *fname, int mod)
 {
@@ -23,18 +25,29 @@ int myopen(char *fname, int mod)
     return open(regfilename, mod);
 }
 
-int myread(int fd, char *buf, int size)
+int myread(int fd, char *buf, int size, size_t off)
 {
     int ret =0;
-    ret = read(fd, buf, size);
+    ret = pread(fd, buf, size, off);
     if(ret <0)
         perror("Failed to read ....\n");
+    readcount += ret;
     if(dumpfd) {
-        write(dumpfd, buf, ret);
+        pwrite(dumpfd, buf, ret, off);
     }
     fprintf(stderr, "Read %d asked %d \n", ret, size);
 
     return ret;
+}
+size_t mysize(int fd)
+{
+    struct stat statbuf;
+    if (fstat (fd, &statbuf) == -1)
+        perror("Failed to stat ....\n");
+    fprintf(stderr, "Size : %ld \n", statbuf.st_size);
+
+    return statbuf.st_size;
+
 }
 int mylseek(int fd, off_t off, int wh)
 {
@@ -59,7 +72,7 @@ int main(int argc, char *argv[])
     }
 
     regfilename = argv[1];
-    osi_get_os_details(regfilename, myread, mylseek, &info);     
+    osi_get_os_details(myopen, myread, mysize, &info);     
     while(info && info[i])
     {
         fprintf(stderr, "\t%s: %s\n", info[i], info[i+1]);
@@ -67,6 +80,7 @@ int main(int argc, char *argv[])
         free(info[i+1]);
         i+=2;
     }
+    fprintf(stderr, "Total read %d \n", readcount);
     if(dumpfd) close(dumpfd);
     
     free(info);

@@ -151,12 +151,11 @@ int osi_get_os_info(char ***osinfo)
    
 
 /* get os information */
-int osi_get_os_details(void *open, void *read, void *lseek, char ***osinfo)
+int osi_get_os_details(void *op, void *rd, void *sz, char ***osinfo)
 {
     int status =0;
     int i=0;
     char **info = NULL;
-    char *regfilename=(char *)open; 
 
     if(!osinfo) 
     {
@@ -164,11 +163,11 @@ int osi_get_os_details(void *open, void *read, void *lseek, char ***osinfo)
         return 0;
     }
 #ifdef REGLOOKUP
-    rghandle = (void *)rll_open_file_clbks(open, read, lseek);
+    rghandle = (void *)rll_open_file_clbks(op, rd, sz);
 
 #else
 
-    rghandle = (void *)hivex_open(regfilename, HIVEX_OPEN_WRITE);
+    rghandle = (void *)hivex_open_clbks(0, op, rd, sz);
     
 #endif
 
