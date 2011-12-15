@@ -13,7 +13,8 @@
 */
 
 #include "osinfo.h"
-#include "reglookuplib.h"
+//#include "reglookuplib.h"
+#include "hivex.h"
 
 static void *rghandle = NULL;
 
@@ -25,6 +26,7 @@ reg_key_lookup_st win_keys[OS_INFO_END] = {
         { "/Microsoft/InetMgr/Parameters", REG_STRING, 0 }
     };
 
+char *win_os_info_path[]= { "Microsoft", "Windows NT", "CurrentVersion", NULL };
 
 static void print_info(int idx, char **info)
 {
@@ -93,12 +95,14 @@ int osi_get_os_info(char ***osinfo)
     char **info=NULL, **ret=NULL;
     char *key = NULL, *value = NULL;
     int i=0;
-    info = (char **)rll_get_value_strings(rghandle, win_keys[0].key, win_keys[0].recursive);
-    
+
     //allocate buffer to return;
     //TODO: max key-value pair 128
     ret = (char **) calloc(256, sizeof(char *)); 
    
+#ifdef REGLOOKUP
+    info = (char **)rll_get_value_strings(rghandle, win_keys[0].key, win_keys[0].recursive);
+    
     while(info && info[i])
     {
         key = get_base_key(info[i]);
@@ -109,6 +113,38 @@ int osi_get_os_info(char ***osinfo)
         i++;
     }
 
+#else
+    {
+    hive_node_h hn;
+    hive_value_h *vals;
+
+    hn = hivex_root(rghandle);
+    while(win_os_info_path[i])
+    {
+        hn = hivex_node_get_child(rghandle, hn, win_os_info_path[i]);
+        if(!hn) 
+        {
+            printf("Node not found %s \n", win_os_info_path[i]);
+            break;
+        }
+        i++;
+    }
+    if(hn)
+    {
+        vals = hivex_node_values(rghandle, hn);
+        while(vals && vals[i])
+        {
+            key = hivex_value_key(rghandle, vals[i]);
+            value = hivex_value_string(rghandle, vals[i]);
+            ret[i*2]=key;
+            ret[i*2+1]=value;
+            fprintf(stderr, "\t\t%s : %s \n", key, value);
+            i++;
+        }
+    }
+    }        
+    
+#endif
     *osinfo = ret;
     return 0;
 }
@@ -120,22 +156,27 @@ int osi_get_os_details(void *open, void *read, void *lseek, char ***osinfo)
     int status =0;
     int i=0;
     char **info = NULL;
-    
+    char *regfilename=(char *)open; 
 
     if(!osinfo) 
     {
         fprintf(stderr, "Invalid parameters\n");
         return 0;
     }
-
+#ifdef REGLOOKUP
     rghandle = (void *)rll_open_file_clbks(open, read, lseek);
+
+#else
+
+    rghandle = (void *)hivex_open(regfilename, HIVEX_OPEN_WRITE);
+    
+#endif
 
     if(!rghandle)
     {
         fprintf(stderr, "Failed to open registry file \n");
         return 0;
     }
-
     //get the os info
     osi_get_os_info(&info);
     *osinfo = info;
@@ -169,6 +210,10 @@ int osi_get_os_details(void *open, void *read, void *lseek, char ***osinfo)
     }
     */
 
+#ifdef REGLOOKUP
     rll_close(rghandle);
+#else
+    hivex_close(rghandle);
+#endif
     return 0;
 }

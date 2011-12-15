@@ -4,9 +4,10 @@
 
 FILES=libosinfo.so win_test
 
-CFLAGS=-Wall -fPIC
+CFLAGS=-Wall -fPIC 
 INC=-I../reglookuplib/include -I../osinfo
-LIB=-L../reglookuplib -lreglookup 
+LIB=-L/usr/local/lib -lhivex  
+
 TEST_LIB=-L../osinfo -losinfo
 
 all: $(FILES)

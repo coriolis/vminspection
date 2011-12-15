@@ -14,10 +14,12 @@ void usage(char *argv[])
 }
 
 static char *regfilename = NULL;
+static int dumpfd =0;
 
 int myopen(char *fname, int mod)
 {
     fprintf(stderr, "Opening %s \n", regfilename);
+    //dumpfd = open("/tmp/dump1", O_CREAT|O_WRONLY|O_TRUNC, 077);
     return open(regfilename, mod);
 }
 
@@ -27,6 +29,9 @@ int myread(int fd, char *buf, int size)
     ret = read(fd, buf, size);
     if(ret <0)
         perror("Failed to read ....\n");
+    if(dumpfd) {
+        write(dumpfd, buf, ret);
+    }
     fprintf(stderr, "Read %d asked %d \n", ret, size);
 
     return ret;
@@ -37,7 +42,7 @@ int mylseek(int fd, off_t off, int wh)
     ret = lseek(fd, off, wh);
     if(ret <0)
         perror("Failed to read ....\n");
-    fprintf(stderr, "lseek from %d off %d \n", wh, (int)off);
+    fprintf(stderr, "Seek off %d wh %d \n", (int)off, wh);
 
     return ret;
 }
@@ -54,7 +59,7 @@ int main(int argc, char *argv[])
     }
 
     regfilename = argv[1];
-    osi_get_os_details(myopen, myread, mylseek, &info);     
+    osi_get_os_details(regfilename, myread, mylseek, &info);     
     while(info && info[i])
     {
         fprintf(stderr, "\t%s: %s\n", info[i], info[i+1]);
@@ -62,6 +67,7 @@ int main(int argc, char *argv[])
         free(info[i+1]);
         i+=2;
     }
+    if(dumpfd) close(dumpfd);
     
     free(info);
     return 0;
