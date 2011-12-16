@@ -129,6 +129,7 @@ int osi_get_os_info(char ***osinfo)
         }
         i++;
     }
+    i=0;
     if(hn)
     {
         vals = hivex_node_values(rghandle, hn);
@@ -136,9 +137,9 @@ int osi_get_os_info(char ***osinfo)
         {
             key = hivex_value_key(rghandle, vals[i]);
             value = hivex_value_string(rghandle, vals[i]);
-            ret[i*2]=key;
-            ret[i*2+1]=value;
-            fprintf(stderr, "\t\t%s : %s \n", key, value);
+            ret[i*2] = key ? key : strdup("");
+            ret[i*2+1] = value ? value : strdup("");
+            //fprintf(stderr, "\t\t%s : %s \n", ret[i*2], ret[i*2+1]);
             i++;
         }
     }
@@ -179,6 +180,7 @@ int osi_get_os_details(void *op, void *rd, void *sz, char ***osinfo)
     //get the os info
     osi_get_os_info(&info);
     *osinfo = info;
+
 
     /*
     for(i=0; i<OS_INFO_END; i++)
