@@ -283,7 +283,7 @@ int osi_get_os_info_windows(char ***osinfo)
     hive_value_h *vals;
 
 
-    g_rghandle = (void *)hivex_open_clbks(0, g_open, g_pread, g_size);
+    g_rghandle = (void *)hivex_open_clbks(0, g_open, g_close, g_pread, g_size);
         
 
     if(!g_rghandle)
