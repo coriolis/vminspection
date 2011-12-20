@@ -75,4 +75,9 @@ typedef struct reg_key_lookup_t {
 /* From given regfile find OS information
    Returns information in a buffer
  */
-int osi_get_os_details(void *open, void *read, void *lseek, char ***info);
+int osi_get_os_details(char *os, void *open, void *close, void *read, void *lseek, char ***info);
+typedef int (* clbk_open)(const char *filename, int flags);
+typedef int (* clbk_close)(int fd);
+typedef ssize_t (* clbk_read)(int fd, void *buf, size_t off, size_t count);
+typedef off_t (* clbk_getsize)(int fd);
+typedef off_t (* clbk_lseek)(int fd, off_t offset, int whence);

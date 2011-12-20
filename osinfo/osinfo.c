@@ -5,18 +5,22 @@
 
 #include <stdio.h>
 #include <string.h>
-/*
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-*/
 
 #include "osinfo.h"
 //#include "reglookuplib.h"
 #include "hivex.h"
 
-static void *rghandle = NULL;
+static void *g_rghandle = NULL;
+
+clbk_open g_open = NULL;
+clbk_close g_close = NULL;
+clbk_read g_pread = NULL;
+clbk_getsize g_size = NULL;
+clbk_lseek g_lseek = NULL;
 
 reg_key_lookup_st win_keys[OS_INFO_END] = {
         { "/Microsoft/Windows NT/CurrentVersion", REG_STRING, 0 },
@@ -27,6 +31,22 @@ reg_key_lookup_st win_keys[OS_INFO_END] = {
     };
 
 char *win_os_info_path[]= { "Microsoft", "Windows NT", "CurrentVersion", NULL };
+
+typedef enum OSI_LINUX_DISTRO_NAME_t {
+        OSI_LINUX_REDHAT,
+        OSI_LINUX_DEBIAN
+}OSI_LINUX_DISTRO_NAME;
+
+typedef struct linux_distro_info_st {
+    char *path;
+    OSI_LINUX_DISTRO_NAME name;
+}linux_distro_info_t;
+linux_distro_info_t  linux_dist_files[] =  {
+            { "/etc/redhat-release", OSI_LINUX_REDHAT },
+            {"/etc/lsb-release" , OSI_LINUX_DEBIAN },
+            { NULL, 0}
+        };
+char *linux_kern_files_path[] = { "/var/log/dmesg", NULL};
 
 static void print_info(int idx, char **info)
 {
@@ -83,14 +103,156 @@ static char * get_value(char *fullkey)
 
     return val;
 }
+
+char **get_linux_kern_info()
+{
+    char buf[1024];
+    int len = 0, i=0;
+    int done = 0;
+    char *line = NULL, *next = NULL, *data = NULL;
+    char **ret= NULL;
     
+    void *handle = NULL;
+    while(linux_kern_files_path[i]) {
+        handle = (void *)g_open(linux_kern_files_path[i], O_RDONLY);
+
+        i++;
+        if(!handle)
+            continue;
+        else
+            break;
+    }
+    if(!handle)
+    {
+        fprintf(stderr, "Failed to find kern info files \n");
+        return NULL;
+    }
+
+    
+    //read 1st 1K we should get something within that
+    len = g_pread((int)handle, buf, sizeof(buf)-1, 0);
+    buf[len]='\0';
+    line = strtok_r(buf, "\n", &next);
+    while(line && !done) {
+        if((data=strstr(line, "Linux version")) != NULL) {
+            if(strstr(data, "[    0.000000]"))
+                data = data + strlen("[    0.000000]");
+            done = 1;
+        }
+        line = strtok_r(NULL, "\n", &next);
+    }
+
+    //found something
+    if(data) {
+        ret = (char **) malloc(sizeof(char *) * 4);
+        ret[0] = strdup("Linux");
+        ret[1] = strdup(data);
+        ret[2] = NULL;
+        ret[3] = NULL;
+    }
+
+    if(handle)
+        g_close(handle);
+
+    return ret;
+        
+}
+            
+char **get_linux_dist_info()
+{
+    char buf[1024];
+    int len = 0, i=0;
+    int done = 0;
+    char *line = NULL, *next = NULL, *data = NULL;
+    char **ret= NULL;
+    linux_distro_info_t dinfo;
+    
+    void *handle = NULL;
+    while(linux_dist_files[i].path) {
+        handle = (void *)g_open(linux_dist_files[i].path, O_RDONLY);
+        dinfo = linux_dist_files[i];
+
+        i++;
+        if(!handle)
+            continue;
+        else
+            break;
+    }
+    if(!handle)
+    {
+        fprintf(stderr, "Failed to find dist info files \n");
+        return NULL;
+    }
+
+    
+    //read 1st 1K we should get something within that
+    len = g_pread((int)handle, buf, sizeof(buf)-1, 0);
+    buf[len]='\0';
+    line = strtok_r(buf, "\n", &next);
+    //MAX 10 key-value pairs
+    ret = (char **) calloc(20, sizeof(char *));
+    i=0;
+    while(line) {
+        if(dinfo.name == OSI_LINUX_DEBIAN) {
+            if((data=strstr(line, "=")) != NULL) {
+                *data = '\0';
+                ret[i]= strdup(line);
+                ret[i+1] = strdup(data+1);
+                printf("%s : %s\n", ret[i], ret[i+1]);
+                i += 2;
+            }
+            line = strtok_r(NULL, "\n", &next);
+            continue;
+        }
+        else {
+            ret[i] = strdup("DISTRIBUTION");
+            ret[i+1] = strdup(line);
+            break;
+        }
+    }
+
+    if(handle)
+        g_close(handle);
+
+    return ret;
+        
+}
+
+    
+/* get os details for linux 
+  Returns array of char*, treated as key-value pair 
+  osinfo[0]= key
+  osinfo[1]= value
+*/
+
+int osi_get_os_info_linux(char ***osinfo)
+{
+    char **info=NULL, **ret=NULL;
+    int i=0, cnt =0;
+
+    info = get_linux_kern_info();
+
+    ret = get_linux_dist_info();
+    if(info) {
+        while(ret && ret[cnt]) cnt++;
+
+        ret = realloc(ret, (cnt + 2) * sizeof(char *));
+        ret[cnt] = info[0];
+        ret[cnt+1] = info[1];
+    }
+    
+    *osinfo = ret;
+
+    return 0;
+}
+
 /*get OS name, version etc.
   Returns array of char*, treated as key-value pair 
   osinfo[0]= key
   osinfo[1]= value
 */
 
-int osi_get_os_info(char ***osinfo)
+int osi_get_os_info_windows(char ***osinfo)
 {
     char **info=NULL, **ret=NULL;
     char *key = NULL, *value = NULL;
@@ -101,7 +263,8 @@ int osi_get_os_info(char ***osinfo)
     ret = (char **) calloc(256, sizeof(char *)); 
    
 #ifdef REGLOOKUP
-    info = (char **)rll_get_value_strings(rghandle, win_keys[0].key, win_keys[0].recursive);
+    g_rghandle = (void *)rll_open_file_clbks(g_open, g_pread, g_size);
+    info = (char **)rll_get_value_strings(g_rghandle, win_keys[0].key, win_keys[0].recursive);
     
     while(info && info[i])
     {
@@ -113,15 +276,26 @@ int osi_get_os_info(char ***osinfo)
         i++;
     }
 
+    rll_close(g_rghandle);
 #else
     {
     hive_node_h hn;
     hive_value_h *vals;
 
-    hn = hivex_root(rghandle);
+
+    g_rghandle = (void *)hivex_open_clbks(0, g_open, g_pread, g_size);
+        
+
+    if(!g_rghandle)
+    {
+        fprintf(stderr, "Failed to open registry file \n");
+        return 0;
+    }
+
+    hn = hivex_root(g_rghandle);
     while(win_os_info_path[i])
     {
-        hn = hivex_node_get_child(rghandle, hn, win_os_info_path[i]);
+        hn = hivex_node_get_child(g_rghandle, hn, win_os_info_path[i]);
         if(!hn) 
         {
             printf("Node not found %s \n", win_os_info_path[i]);
@@ -132,11 +306,11 @@ int osi_get_os_info(char ***osinfo)
     i=0;
     if(hn)
     {
-        vals = hivex_node_values(rghandle, hn);
+        vals = hivex_node_values(g_rghandle, hn);
         while(vals && vals[i])
         {
-            key = hivex_value_key(rghandle, vals[i]);
-            value = hivex_value_string(rghandle, vals[i]);
+            key = hivex_value_key(g_rghandle, vals[i]);
+            value = hivex_value_string(g_rghandle, vals[i]);
             ret[i*2] = key ? key : strdup("");
             ret[i*2+1] = value ? value : strdup("");
             //fprintf(stderr, "\t\t%s : %s \n", ret[i*2], ret[i*2+1]);
@@ -145,6 +319,7 @@ int osi_get_os_info(char ***osinfo)
     }
     }        
     
+    hivex_close(g_rghandle);
 #endif
     *osinfo = ret;
     return 0;
@@ -152,7 +327,7 @@ int osi_get_os_info(char ***osinfo)
    
 
 /* get os information */
-int osi_get_os_details(void *op, void *rd, void *sz, char ***osinfo)
+int osi_get_os_details(char *os, void *op, void *cl, void *rd, void *sz, char ***osinfo)
 {
     int status =0;
     int i=0;
@@ -163,22 +338,17 @@ int osi_get_os_details(void *op, void *rd, void *sz, char ***osinfo)
         fprintf(stderr, "Invalid parameters\n");
         return 0;
     }
-#ifdef REGLOOKUP
-    rghandle = (void *)rll_open_file_clbks(op, rd, sz);
 
-#else
+    g_open = op;
+    g_close = cl;
+    g_pread = rd;
+    g_size = sz;
+    if(os && strcmp(os, "windows")==0)
+        //get the os info
+        osi_get_os_info_windows(&info);
+    else
+        osi_get_os_info_linux(&info);
 
-    rghandle = (void *)hivex_open_clbks(0, op, rd, sz);
-    
-#endif
-
-    if(!rghandle)
-    {
-        fprintf(stderr, "Failed to open registry file \n");
-        return 0;
-    }
-    //get the os info
-    osi_get_os_info(&info);
     *osinfo = info;
 
 
@@ -211,10 +381,5 @@ int osi_get_os_details(void *op, void *rd, void *sz, char ***osinfo)
     }
     */
 
-#ifdef REGLOOKUP
-    rll_close(rghandle);
-#else
-    hivex_close(rghandle);
-#endif
     return 0;
 }

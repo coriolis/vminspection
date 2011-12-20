@@ -2,9 +2,9 @@
 
 ################################################################################
 
-FILES=libosinfo.so win_test
+FILES=libosinfo.so win_test linux_test
 
-CFLAGS=-Wall -fPIC 
+CFLAGS=-Wall -fPIC -ggdb
 INC=-I../../hivex/lib/ -I../osinfo
 LIB=-L../../hivex/lib/.libs -lhivex  
 
@@ -23,6 +23,12 @@ win_test:win_test.o
 
 win_test.o: win_test.c
 	$(CC) $(CFLAGS) $(OPTS) $(INC) -c -o $@ win_test.c
+
+linux_test:linux_test.o
+	$(CC) $(CFLAGS) $(OPTS) $(LIB) $(TEST_LIB) -o $@ linux_test.o $(OBJS)
+
+linux_test.o: linux_test.c
+	$(CC) $(CFLAGS) $(OPTS) $(INC) -c -o $@ linux_test.c
 
 clean:
 	rm -f $(FILES) *.o 
