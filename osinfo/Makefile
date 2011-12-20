@@ -2,7 +2,7 @@
 
 ################################################################################
 
-FILES=libosinfo.so win_test linux_test
+FILES=libosinfo.so 
 
 CFLAGS=-Wall -fPIC -ggdb
 INC=-I../../hivex/lib/ -I../osinfo
