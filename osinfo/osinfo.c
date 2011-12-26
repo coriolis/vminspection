@@ -145,7 +145,7 @@ char **get_linux_kern_info()
     //found something
     if(data) {
         ret = (char **) malloc(sizeof(char *) * 4);
-        ret[0] = strdup("Linux");
+        ret[0] = strdup("Kernel Info");
         ret[1] = strdup(data);
         ret[2] = NULL;
         ret[3] = NULL;
@@ -205,7 +205,7 @@ char **get_linux_dist_info()
             continue;
         }
         else {
-            ret[i] = strdup("DISTRIBUTION");
+            ret[i] = strdup("ProductName");
             ret[i+1] = strdup(line);
             break;
         }
