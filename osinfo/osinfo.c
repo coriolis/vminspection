@@ -162,7 +162,7 @@ char **get_linux_dist_info()
 {
     char buf[1024];
     int len = 0, i=0;
-    char *line = NULL, *next = NULL, *data = NULL;
+    char *line = NULL, *next = NULL, *data = NULL, *pname = NULL;
     char **ret= NULL;
     linux_distro_info_t dinfo;
     
@@ -188,8 +188,8 @@ char **get_linux_dist_info()
     len = g_pread(handle, buf, sizeof(buf)-1, 0);
     buf[len]='\0';
     line = strtok_r(buf, "\n", &next);
-    //MAX 10 key-value pairs
-    ret = (char **) calloc(20, sizeof(char *));
+    //MAX 25 key-value pairs
+    ret = (char **) calloc(50, sizeof(char *));
     i=0;
     while(line) {
         if(dinfo.name == OSI_LINUX_DEBIAN) {
@@ -197,7 +197,10 @@ char **get_linux_dist_info()
                 *data = '\0';
                 ret[i]= strdup(line);
                 ret[i+1] = strdup(data+1);
-                printf("%s : %s\n", ret[i], ret[i+1]);
+                //printf("%s : %s\n", ret[i], ret[i+1]);
+                //use DISTRIB_ID as product name 
+                if(strstr(line, "DISTRIB_ID"))
+                    pname = ret[i+1];
                 i += 2;
             }
             line = strtok_r(NULL, "\n", &next);
@@ -208,6 +211,12 @@ char **get_linux_dist_info()
             ret[i+1] = strdup(line);
             break;
         }
+    }
+    
+    //in debian, need to add ProductName key
+    if(dinfo.name == OSI_LINUX_DEBIAN && i >0) {
+            ret[i] = strdup("ProductName");
+            ret[i+1] = strdup(pname? pname: "Ubuntu");
     }
 
     if(handle != -1)
