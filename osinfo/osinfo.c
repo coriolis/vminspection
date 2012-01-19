@@ -112,17 +112,17 @@ char **get_linux_kern_info()
     char *line = NULL, *next = NULL, *data = NULL;
     char **ret= NULL;
     
-    void *handle = NULL;
+    int handle = -1;
     while(linux_kern_files_path[i]) {
-        handle = (void *)g_open(linux_kern_files_path[i], O_RDONLY);
+        handle = g_open(linux_kern_files_path[i], O_RDONLY);
 
         i++;
-        if(!handle)
+        if(handle == -1)
             continue;
         else
             break;
     }
-    if(!handle)
+    if(handle == -1)
     {
         fprintf(stderr, "Failed to find kern info files \n");
         return NULL;
@@ -130,7 +130,7 @@ char **get_linux_kern_info()
 
     
     //read 1st 1K we should get something within that
-    len = g_pread((int)handle, buf, sizeof(buf)-1, 0);
+    len = g_pread(handle, buf, sizeof(buf)-1, 0);
     buf[len]='\0';
     line = strtok_r(buf, "\n", &next);
     while(line && !done) {
@@ -151,7 +151,7 @@ char **get_linux_kern_info()
         ret[3] = NULL;
     }
 
-    if(handle)
+    if(handle != -1)
         g_close(handle);
 
     return ret;
@@ -162,23 +162,22 @@ char **get_linux_dist_info()
 {
     char buf[1024];
     int len = 0, i=0;
-    int done = 0;
     char *line = NULL, *next = NULL, *data = NULL;
     char **ret= NULL;
     linux_distro_info_t dinfo;
     
-    void *handle = NULL;
+    int handle = -1;
     while(linux_dist_files[i].path) {
-        handle = (void *)g_open(linux_dist_files[i].path, O_RDONLY);
+        handle = g_open(linux_dist_files[i].path, O_RDONLY);
         dinfo = linux_dist_files[i];
 
         i++;
-        if(!handle)
+        if(handle == -1)
             continue;
         else
             break;
     }
-    if(!handle)
+    if(handle == -1)
     {
         fprintf(stderr, "Failed to find dist info files \n");
         return NULL;
@@ -186,7 +185,7 @@ char **get_linux_dist_info()
 
     
     //read 1st 1K we should get something within that
-    len = g_pread((int)handle, buf, sizeof(buf)-1, 0);
+    len = g_pread(handle, buf, sizeof(buf)-1, 0);
     buf[len]='\0';
     line = strtok_r(buf, "\n", &next);
     //MAX 10 key-value pairs
@@ -211,7 +210,7 @@ char **get_linux_dist_info()
         }
     }
 
-    if(handle)
+    if(handle != -1)
         g_close(handle);
 
     return ret;
@@ -228,7 +227,7 @@ char **get_linux_dist_info()
 int osi_get_os_info_linux(char ***osinfo)
 {
     char **info=NULL, **ret=NULL;
-    int i=0, cnt =0;
+    int cnt =0;
 
     info = get_linux_kern_info();
 
@@ -254,7 +253,7 @@ int osi_get_os_info_linux(char ***osinfo)
 
 int osi_get_os_info_windows(char ***osinfo)
 {
-    char **info=NULL, **ret=NULL;
+    char **ret=NULL;
     char *key = NULL, *value = NULL;
     int i=0;
 
@@ -329,8 +328,6 @@ int osi_get_os_info_windows(char ***osinfo)
 /* get os information */
 int osi_get_os_details(char *os, void *op, void *cl, void *rd, void *sz, char ***osinfo)
 {
-    int status =0;
-    int i=0;
     char **info = NULL;
 
     if(!osinfo) 
