@@ -5,17 +5,27 @@
 
 #include <stdio.h>
 #include <string.h>
-/*
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-*/
+#include <stdlib.h>
 
 #include "osinfo.h"
+#ifdef REGLOOKUP
 #include "reglookuplib.h"
+#else
+#include "hivex.h"
+#endif
 
-static void *rghandle = NULL;
+static void *g_rghandle = NULL;
+
+clbk_open g_open = NULL;
+clbk_close g_close = NULL;
+clbk_pread g_pread = NULL;
+clbk_read g_read = NULL;
+clbk_getsize g_size = NULL;
+clbk_lseek g_lseek = NULL;
 
 reg_key_lookup_st win_keys[OS_INFO_END] = {
         { "/Microsoft/Windows NT/CurrentVersion", REG_STRING, 0 },
@@ -90,7 +100,11 @@ static char * get_value(char *fullkey)
 
 int osi_get_os_info(char ***osinfo)
 {
+<<<<<<< Updated upstream
     char **info=NULL, **ret=NULL;
+=======
+    char **ret=NULL, **info;
+>>>>>>> Stashed changes
     char *key = NULL, *value = NULL;
     int i=0;
     info = (char **)rll_get_value_strings(rghandle, win_keys[0].key, win_keys[0].recursive);
@@ -99,16 +113,73 @@ int osi_get_os_info(char ***osinfo)
     //TODO: max key-value pair 128
     ret = (char **) calloc(256, sizeof(char *)); 
    
+<<<<<<< Updated upstream
+=======
+#ifdef REGLOOKUP
+    fprintf(stdout, "Finding regkeys %s \n", win_keys[0].key);
+    g_rghandle = (void *)rll_open_file_clbks(g_open, g_read, g_lseek);
+    info = (char **)rll_get_value_strings(g_rghandle, win_keys[0].key, win_keys[0].recursive);
+    
+>>>>>>> Stashed changes
     while(info && info[i])
     {
         key = get_base_key(info[i]);
         value = get_value(info[i]);
         ret[i*2]=key;
         ret[i*2+1]=value;
-        //fprintf(stderr, "\t\t%s : %s \n", key, value);
+        fprintf(stderr, "\t\t%s : %s \n", key, value);
         i++;
     }
 
+<<<<<<< Updated upstream
+=======
+    rll_close(g_rghandle);
+    print_info(0, ret);
+#else
+    {
+    hive_node_h hn;
+    hive_value_h *vals;
+
+
+    g_rghandle = (void *)hivex_open_clbks(0, g_open, g_close, g_pread, g_size);
+        
+
+    if(!g_rghandle)
+    {
+        fprintf(stderr, "Failed to open registry file \n");
+        return 0;
+    }
+
+    hn = hivex_root(g_rghandle);
+    while(win_os_info_path[i])
+    {
+        hn = hivex_node_get_child(g_rghandle, hn, win_os_info_path[i]);
+        if(!hn) 
+        {
+            printf("Node not found %s \n", win_os_info_path[i]);
+            break;
+        }
+        i++;
+    }
+    i=0;
+    if(hn)
+    {
+        vals = hivex_node_values(g_rghandle, hn);
+        while(vals && vals[i])
+        {
+            key = hivex_value_key(g_rghandle, vals[i]);
+            value = hivex_value_string(g_rghandle, vals[i]);
+            ret[i*2] = key ? key : strdup("");
+            ret[i*2+1] = value ? value : strdup("");
+            //fprintf(stderr, "\t\t%s : %s \n", ret[i*2], ret[i*2+1]);
+            i++;
+        }
+    }
+    }        
+    
+    hivex_close(g_rghandle);
+#endif
+>>>>>>> Stashed changes
     *osinfo = ret;
     return 0;
 }
@@ -128,7 +199,23 @@ int osi_get_os_details(void *open, void *read, void *lseek, char ***osinfo)
         return 0;
     }
 
+<<<<<<< Updated upstream
     rghandle = (void *)rll_open_file_clbks(open, read, lseek);
+=======
+    g_open = op;
+    g_close = cl;
+    g_pread = rd;
+    g_size = sz;
+#ifdef REGLOOKUP
+    g_lseek = sz;
+    g_read = rd;
+#endif
+    if(os && strcmp(os, "windows")==0)
+        //get the os info
+        osi_get_os_info_windows(&info);
+    else
+        osi_get_os_info_linux(&info);
+>>>>>>> Stashed changes
 
     if(!rghandle)
     {
