@@ -320,6 +320,8 @@ bool                  regfi_iterator_walk_path(REGFI_ITERATOR* i,
 					       const char** path);
 const REGF_NK_REC*    regfi_iterator_cur_key(REGFI_ITERATOR* i);
 const REGF_NK_REC*    regfi_iterator_first_subkey(REGFI_ITERATOR* i);
+const REGF_NK_REC*    regfi_iterator_last_subkey(REGFI_ITERATOR* i);
+const REGF_NK_REC*    regfi_iterator_prev_subkey(REGFI_ITERATOR* i);
 const REGF_NK_REC*    regfi_iterator_cur_subkey(REGFI_ITERATOR* i);
 const REGF_NK_REC*    regfi_iterator_next_subkey(REGFI_ITERATOR* i);
 

@@ -4,7 +4,7 @@
 
 FILES=libreglookup.so
 
-CFLAGS=-fPIC
+CFLAGS=-fPIC -g -ggdb
 all: $(FILES)
 
 libreglookup.so:reglookupLib.o regfi.o smb_deps.o void_stack.o
