@@ -37,7 +37,7 @@ void* zalloc(size_t size)
   return ret_val;
 }
 
-void* zcalloc(size_t size, unsigned int count)
+void* regzcalloc(size_t size, unsigned int count)
 {
   return zalloc(size*count);
 }
@@ -838,7 +838,7 @@ bool sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
      * between a non-present DACL (allow all access) and a DACL with no ACE's
      * (allow no access).
      */
-    if((psa->ace = (SEC_ACE*)zcalloc(sizeof(SEC_ACE), psa->num_aces+1)) == NULL)
+    if((psa->ace = (SEC_ACE*)regzcalloc(sizeof(SEC_ACE), psa->num_aces+1)) == NULL)
     {
       free(psa);
       *ppsa = NULL;

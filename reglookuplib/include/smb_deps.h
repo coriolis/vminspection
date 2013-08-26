@@ -42,7 +42,7 @@
 #define DEBUG(lvl,body) 0
 
 void* zalloc(size_t size);
-void* zcalloc(size_t size, unsigned int count);
+void* regzcalloc(size_t size, unsigned int count);
 
 /* From includes.h */
 

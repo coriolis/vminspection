@@ -612,7 +612,7 @@ static bool prs_nk_rec( const char *desc, prs_struct *ps,
 	
   if ( name_length ) 
   {
-    if(ps->io && !(nk->keyname = (char*)zcalloc(sizeof(char), name_length+1)))
+    if(ps->io && !(nk->keyname = (char*)regzcalloc(sizeof(char), name_length+1)))
 	return false;
 
     if(!prs_uint8s("name", ps, depth, (uint8*)nk->keyname, name_length))
@@ -1044,7 +1044,7 @@ static bool hbin_prs_lf_records(const char *desc, REGF_HBIN *hbin,
     return false;
 
   if ( hbin->ps.io ) {
-    if ( !(lf->hashes = (REGF_HASH_REC*)zcalloc(sizeof(REGF_HASH_REC), lf->num_keys )) )
+    if ( !(lf->hashes = (REGF_HASH_REC*)regzcalloc(sizeof(REGF_HASH_REC), lf->num_keys )) )
       return false;
   }
 
@@ -1168,7 +1168,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth,
   if ( vk->flag&VK_FLAG_NAME_PRESENT ) {
 
     if ( hbin->ps.io ) {
-      if ( !(vk->valuename = (char*)zcalloc(sizeof(char), name_length+1 )))
+      if ( !(vk->valuename = (char*)regzcalloc(sizeof(char), name_length+1 )))
 	return false;
     }
     if ( !prs_uint8s("name", ps, depth, 
@@ -1190,7 +1190,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth,
 
       if ( hbin->ps.io ) 
       {
-	if ( !(vk->data = (uint8*)zcalloc(sizeof(uint8), vk->data_size) ) )
+	if ( !(vk->data = (uint8*)regzcalloc(sizeof(uint8), vk->data_size) ) )
 	  return false;
       }
 
@@ -1223,7 +1223,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth,
     }
     else 
     {
-      if(!(vk->data = zcalloc(sizeof(uint8), 4)))
+      if(!(vk->data = regzcalloc(sizeof(uint8), 4)))
 	return false;
       SIVAL( vk->data, 0, vk->data_off );
     }
@@ -1262,7 +1262,7 @@ static bool hbin_prs_vk_records(const char *desc, REGF_HBIN *hbin,
   	
   if(hbin->ps.io)
   {
-    if (!(nk->values = (REGF_VK_REC*)zcalloc(sizeof(REGF_VK_REC), 
+    if (!(nk->values = (REGF_VK_REC*)regzcalloc(sizeof(REGF_VK_REC), 
 					      nk->num_values )))
       return false;
   }
