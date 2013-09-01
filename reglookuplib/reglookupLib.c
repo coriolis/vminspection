@@ -29,6 +29,7 @@ int type_filter;
 const char* key_special_chars = ",\"\\/";
 const char* subfield_special_chars = ",\"\\|";
 const char* common_special_chars = ",\"\\";
+const char* common_special_empty_chars = "";
 
 #define NUM_DEFAULT_VALUES 256
 //TODO: Fix these properly
@@ -232,7 +233,7 @@ static char* data_to_ascii(unsigned char *datap, uint32 len, uint32 type,
       cur_quoted = quote_buffer(datap, len, common_special_chars);
     }
     else
-      cur_quoted = quote_string(ascii, common_special_chars);
+      cur_quoted = quote_string(ascii, common_special_empty_chars);
     free(ascii);
     if(cur_quoted == NULL)
     {
